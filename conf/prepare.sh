@@ -19,15 +19,6 @@ curl -sfL "${K3S_SCRIPT_URL}" -o "${K3S_SCRIPT_FILE}"
 chmod 0700 "${K3S_SCRIPT_FILE}"
 chown root:root -R "${INSTALL_K3S_BIN_DIR}"
 
-# Install k3s binary
-source <(sed 's/^set -e/#set -e/; /include env command/q' "${K3S_SCRIPT_FILE}")
-{
-  set +ue
-  verify_system
-  setup_env "$@"
-  download_and_verify
-}
-
 # Install k3s-selinux
 case ${INSTALL_K3S_CHANNEL} in
   *testing) rpm_channel=testing ;;
@@ -46,11 +37,23 @@ gpgcheck=1
 repo_gpgcheck=0
 gpgkey=https://${rpm_site}/public.key
 _EOF
-rpm-ostree install -y k3s-selinux
+
+rpm-ostree install --idempotent --allow-inactive --apply-live --assumeyes container-selinux k3s-selinux
+
+# Install k3s binary
+source <(sed 's/^set -e/#set -e/; /include env command/q' "${K3S_SCRIPT_FILE}")
+{
+  set +ue
+  verify_system
+  setup_env "$@"
+  download_and_verify
+}
 
 # Create necessary directories and set correct SELinux context
 mkdir -p "/var/lib/rancher/k3s"
 restorecon -R "/var/lib/rancher/k3s"
+# TODO: add container_runtime_exec_t to "${INSTALL_K3S_BIN_DIR}/k3s" binary
+# chcon -u system_u -r object_r -t container_runtime_exec_t "${INSTALL_K3S_BIN_DIR}/k3s"
 
 # Clean up RPM-OSTree and commit the changes
 rpm-ostree cleanup -m
