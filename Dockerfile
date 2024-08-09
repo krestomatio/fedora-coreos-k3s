@@ -9,17 +9,10 @@ ENV IMAGE_NAME="fedora-coreos-k3s" \
 
 FROM quay.io/fedora/fedora-coreos:stable
 
-ADD --chown=root:root --chmod=0700 https://get.k3s.io/ /usr/bin/k3s-installer.sh
+ADD --chown=root:root --chmod=0700 conf/prepare.sh /tmp/prepare.sh
 
 ARG INSTALL_K3S_CHANNEL=stable
-RUN set -eu && \
-    INSTALL_K3S_CHANNEL=${INSTALL_K3S_CHANNEL:-stable} \
-    INSTALL_K3S_SKIP_START=true \
-    INSTALL_K3S_SKIP_ENABLE=true \
-    INSTALL_K3S_BIN_DIR=/usr/bin \
-    /usr/bin/k3s-installer.sh && \
-    rpm-ostree cleanup -m && \
-    ostree container commit
+RUN /tmp/prepare.sh; rm -f /tmp/prepare.sh
 
 # Labels
 LABEL name="${IMAGE_NAME}" \
