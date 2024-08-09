@@ -12,7 +12,7 @@ FROM quay.io/fedora/fedora-coreos:stable
 ADD --chown=root:root --chmod=0700 conf/prepare.sh /tmp/prepare.sh
 
 ARG INSTALL_K3S_CHANNEL=stable
-RUN /tmp/prepare.sh; rm -f /tmp/prepare.sh
+RUN set -eu && /tmp/prepare.sh; rm -f /tmp/prepare.sh
 
 # Labels
 LABEL name="${IMAGE_NAME}" \

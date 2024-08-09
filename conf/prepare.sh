@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -eu
 
 # Set environment variables
 INSTALL_K3S_CHANNEL=${INSTALL_K3S_CHANNEL:-stable}
@@ -19,14 +19,14 @@ curl -sfL "${K3S_SCRIPT_URL}" -o "${K3S_SCRIPT_FILE}"
 chmod 0700 "${K3S_SCRIPT_FILE}"
 chown root:root -R "${INSTALL_K3S_BIN_DIR}"
 
-# prepare
+# Install k3s binary
 source <(sed 's/^set -e/#set -e/; /include env command/q' "${K3S_SCRIPT_FILE}")
-verify_system
-setup_env "$@"
-download_and_verify
-create_symlinks
-create_killall
-create_uninstall
+{
+  set +ue
+  verify_system
+  setup_env "$@"
+  download_and_verify
+}
 
 # Install k3s-selinux
 case ${INSTALL_K3S_CHANNEL} in
