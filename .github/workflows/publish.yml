@@ -45,7 +45,7 @@ jobs:
           tags: |
             type=raw,value=${{ matrix.release_channel }},enable=${{ github.event_name != 'schedule' }}
             type=schedule,pattern=weekly,enable=${{ github.event_name == 'schedule' }},prefix=${{ matrix.release_channel }}-
-            type=sha
+            type=sha,prefix=${{ matrix.release_channel }}-sha-
           labels: |
             quay.expires-after=${{ github.event_name == 'schedule' && '1y' || '3y' }}
 
