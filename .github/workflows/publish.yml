@@ -11,7 +11,7 @@ on:
     paths-ignore:
       - "**.md"
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * 0" # Weekly
   workflow_dispatch: {}
 
 env:
@@ -43,12 +43,11 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ matrix.release_channel }}
-            type=semver,pattern={{major}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{version}}
-            type=schedule,pattern=nightly
+            type=raw,value=${{ matrix.release_channel }},enable=${{ github.event_name != 'schedule' }}
+            type=schedule,pattern=weekly,enable=${{ github.event_name == 'schedule' }},prefix=${{ matrix.release_channel }}-
             type=sha
+          labels: |
+            quay.expires-after=${{ github.event_name == 'schedule' && '1y' || '3y' }}
 
       - name: Log in to the container registry
         uses: docker/login-action@v3
