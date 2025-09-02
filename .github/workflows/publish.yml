@@ -25,7 +25,7 @@ jobs:
 
     strategy:
       matrix:
-        release_channel: ["v1.29", "v1.30", "stable"]
+        release_channel: ["v1.30", "v1.31", "v1.32", "stable"]
 
     steps:
       - name: Checkout repository
