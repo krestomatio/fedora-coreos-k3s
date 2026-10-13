@@ -7,7 +7,8 @@
   define its packages, SELinux behavior, architectures, and release channels.
 - Published image references are consumed by infrastructure automation. Preserve
   architecture parity and channel semantics; coordinate any channel or digest
-  change with `ansible-collection-infra` and the infrastructure repositories.
+  change with `kio-web-app-infra`, whose K3s node Terraform modules rebase onto
+  this image, and the other infrastructure repositories.
 
 ## Validation
 
