@@ -17,19 +17,56 @@ on:
 env:
   REGISTRY: quay.io
   IMAGE_NAME: quay.io/krestomatio/fedora-coreos-k3s
+  BASE_IMAGE_NAME: quay.io/fedora/fedora-coreos
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     strategy:
+      fail-fast: false
       matrix:
-        release_channel: ["v1.30", "v1.31", "v1.32", "stable"]
+        # K3s release channel -> Fedora CoreOS major ("stable" uses the stable tag as is)
+        include:
+          - release_channel: v1.30
+            fedora_coreos: "42"
+          - release_channel: v1.31
+            fedora_coreos: "42"
+          - release_channel: v1.32
+            fedora_coreos: "42"
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Resolve base image and tag
+        id: base
+        env:
+          RELEASE_CHANNEL: ${{ matrix.release_channel }}
+          FEDORA_COREOS: ${{ matrix.fedora_coreos }}
+        run: |
+          set -euo pipefail
+          if [ "${FEDORA_COREOS}" = "stable" ]; then
+            base_tag=stable
+            tag="${RELEASE_CHANNEL}_stable"
+          elif [[ "${FEDORA_COREOS}" =~ ^[0-9]+$ ]]; then
+            # Newest stable-stream release (<major>.<YYYYMMDD>.3.<revision>) still in the registry
+            base_tag=$(skopeo list-tags "docker://${BASE_IMAGE_NAME}" \
+              | jq -r --arg major "${FEDORA_COREOS}" '.Tags[] | select(test("^" + $major + "\\.[0-9]{8}\\.3\\.[0-9]+$"))' \
+              | sort -t. -k2,2n -k4,4n | tail -n 1)
+            if [ -z "${base_tag}" ]; then
+              echo "::error::No stable Fedora CoreOS ${FEDORA_COREOS} image found in ${BASE_IMAGE_NAME}"
+              exit 1
+            fi
+            tag="${RELEASE_CHANNEL}_f${FEDORA_COREOS}"
+          else
+            echo "::error::fedora_coreos must be a major version or \"stable\", got \"${FEDORA_COREOS}\""
+            exit 1
+          fi
+          echo "Base image: ${BASE_IMAGE_NAME}:${base_tag}"
+          echo "image=${BASE_IMAGE_NAME}:${base_tag}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
       - name: Set up qemu
         uses: docker/setup-qemu-action@v3
@@ -43,9 +80,9 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ matrix.release_channel }},enable=${{ github.event_name != 'schedule' }}
-            type=schedule,pattern=weekly,enable=${{ github.event_name == 'schedule' }},prefix=${{ matrix.release_channel }}-
-            type=sha,prefix=${{ matrix.release_channel }}-sha-
+            type=raw,value=${{ steps.base.outputs.tag }},enable=${{ github.event_name != 'schedule' }}
+            type=schedule,pattern=weekly,enable=${{ github.event_name == 'schedule' }},prefix=${{ steps.base.outputs.tag }}-
+            type=sha,prefix=${{ steps.base.outputs.tag }}-sha-
           labels: |
             quay.expires-after=${{ github.event_name == 'schedule' && '1y' || '3y' }}
 
@@ -65,3 +102,4 @@ jobs:
           push: true
           set: |
             release.args.INSTALL_K3S_CHANNEL=${{ matrix.release_channel }}
+            release.args.ARG_IMAGE_FROM=${{ steps.base.outputs.image }}

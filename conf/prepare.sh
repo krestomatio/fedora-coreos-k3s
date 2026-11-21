@@ -5,8 +5,7 @@ set -eu
 INSTALL_K3S_CHANNEL=${INSTALL_K3S_CHANNEL:-stable}
 INSTALL_K3S_SKIP_START=true
 INSTALL_K3S_SKIP_ENABLE=true
-# In fedora coreos, /usr/local is a symlink to /var/usrlocal
-INSTALL_K3S_BIN_DIR=/var/usrlocal/bin
+INSTALL_K3S_BIN_DIR=/usr/bin/k3s
 if [[ "$INSTALL_K3S_CHANNEL" =~ ^v(.*) ]]; then
     K3S_SCRIPT_BRANCH="release-${BASH_REMATCH[1]}"
 else

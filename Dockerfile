@@ -7,7 +7,7 @@ ENV IMAGE_NAME="fedora-coreos-k3s" \
     IMAGE_DESCRIPTION="Fedora CoreOS based image for installing and running K3s clusters" \
     IMAGE_TITLE="Fedora CoreOS K3s image"
 
-FROM quay.io/fedora/fedora-coreos:stable
+FROM ${ARG_IMAGE_FROM}
 
 ADD --chown=root:root --chmod=0700 conf/prepare.sh /tmp/prepare.sh
 
