@@ -38,7 +38,7 @@ repo_gpgcheck=0
 gpgkey=https://${rpm_site}/public.key
 _EOF
 
-rpm-ostree install --idempotent --allow-inactive --apply-live --assumeyes container-selinux k3s-selinux
+rpm-ostree install --idempotent --allow-inactive --assumeyes container-selinux k3s-selinux
 
 # Install k3s binary
 source <(sed 's/^set -e/#set -e/; /include env command/q' "${K3S_SCRIPT_FILE}")
